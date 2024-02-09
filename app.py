@@ -1,77 +1,79 @@
- streamlit as st
+from flask import Flask, render_template, request
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm imimportport SVC
+from sklearn.svm import SVC
 
-# Function to perform KMeans clustering
-def perform_kmeans(data_point):
-    dataset = pd.read_csv("/home/username/Documents/train.csv")
-    X = dataset.drop(columns=["target"])
+app = Flask(__name__)
+
+# Task 1
+@app.route('/task1')
+def task1():
+    dataset = pd.read_csv(r"C:\Users\ACER\Downloads\internship\train - train.csv")
+
+    X = dataset.drop(columns=["target"]) 
+    y = dataset["target"]
+
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
+
     kmeans = KMeans(n_clusters=3, random_state=42)
     kmeans.fit(X_scaled)
-    new_data_point_scaled = scaler.transform([data_point])
+
+    def get_new_data_point():
+        data_input = input("Enter the values for the new data point separated by commas: ")
+        new_data_point = [float(value.strip()) for value in data_input.split(',')]
+        return np.array(new_data_point).reshape(1, -1)
+
+    new_data_point = get_new_data_point()
+
+    new_data_point_scaled = scaler.transform(new_data_point)
+
     cluster_assigned = kmeans.predict(new_data_point_scaled)[0]
     cluster_center = kmeans.cluster_centers_[cluster_assigned]
     distance_to_center = np.linalg.norm(new_data_point_scaled - cluster_center)
-    return f"The new data point belongs to cluster {cluster_assigned} because it is closest to the cluster center. Distance to cluster center: {distance_to_center}"
 
-# Function to perform classification using logistic regression, random forest, and SVM
-def perform_classification():
-    train_dataset = pd.read_csv("/home/username/Documents/train.csv")
-    test_dataset = pd.read_csv("/home/username/Documents/test.csv")
+    return render_template('tasks.html', task_num=1, cluster_assigned=cluster_assigned, distance_to_center=distance_to_center)
+
+
+# Task 2
+@app.route('/task2')
+def task2():
+    train_dataset = pd.read_csv(r"C:\Users\ACER\Downloads\internship\train - train.csv")
+    test_dataset = pd.read_csv(r"C:\Users\ACER\Downloads\internship\test - test.csv")
+
     X_train = train_dataset.drop(columns=["target"])
     y_train = train_dataset["target"]
     X_test = test_dataset
+
     logistic_regression = LogisticRegression(random_state=42)
-    random_forest = RandomForestClassifier(random_state=42)
-    svm_classifier = SVC(random_state=42)
     logistic_regression.fit(X_train, y_train)
-    random_forest.fit(X_train, y_train)
-    svm_classifier.fit(X_train, y_train)
     y_pred_logistic = logistic_regression.predict(X_test)
+
+    random_forest = RandomForestClassifier(random_state=42)
+    random_forest.fit(X_train, y_train)
     y_pred_rf = random_forest.predict(X_test)
+
+    svm_classifier = SVC(random_state=42)
+    svm_classifier.fit(X_train, y_train)
     y_pred_svm = svm_classifier.predict(X_test)
-    return {
-        "Logistic Regression Predictions": y_pred_logistic,
-        "Random Forest Predictions": y_pred_rf,
-        "SVM Predictions": y_pred_svm
-    }
 
-# Function to perform data analysis
-def perform_data_analysis():
-    raw_data = pd.read_csv("/home/username/Documents/rawdata.csv")
-    # Perform data analysis tasks and return the results
-    # For example, calculate datewise total duration and number of activities
+    return render_template('tasks.html', task_num=2, y_pred_logistic=y_pred_logistic, y_pred_rf=y_pred_rf, y_pred_svm=y_pred_svm)
 
-# Streamlit UI
-st.title("Task Application")
 
-task = st.selectbox("Select Task", ["KMeans Clustering", "Classification Models", "Data Analysis"])
+# Task 3
+@app.route('/task3')
+def task3():
+    raw_data = pd.read_csv(r"C:\Users\ACER\Downloads\internship\rawdata - inputsheet.csv")
 
-if task == "KMeans Clustering":
-    st.subheader("Perform KMeans Clustering")
-    data_point_input = st.text_input("Enter the values for the new data point separated by commas:")
-    if st.button("Perform Clustering"):
-        data_point = [float(value.strip()) for value in data_point_input.split(',')]
-        result = perform_kmeans(data_point)
-        st.write(result)
+    datewise_duration = raw_data.groupby(['date', 'position']).agg({'time': 'sum'}).unstack().fillna(0)
+    datewise_activities = raw_data.groupby(['date', 'activity']).size().unstack().fillna(0)
+    output = pd.concat([datewise_duration, datewise_activities], axis=1)
 
-elif task == "Classification Models":
-    st.subheader("Perform Classification Models")
-    if st.button("Perform Classification"):
-        result = perform_classification()
-        for model, predictions in result.items():
-            st.write(f"{model} Predictions:")
-            st.write(predictions)
+    return render_template('tasks.html', task_num=3, output=output)
 
-elif task == "Data Analysis":
-    st.subheader("Perform Data Analysis")
-    if st.button("Perform Analysis"):
-        result = perform_data_analysis()
-        # Display the results of data analysis
-        # For example, show datewise total duration and number of activities
+
+if __name__ == '__main__':
+    app.run(debug=True)
