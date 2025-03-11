@@ -30,6 +30,8 @@ date
 ---
 
 ## Visualizations
+![Figure_1](https://github.com/user-attachments/assets/cdb4d81d-c130-4e13-8f66-71062f8d6819)
+
 Three histogram plots show the predicted class distributions for each model.
 - **X-axis**: Predicted class (encoded labels).
 - **Y-axis**: Frequency of predictions.
